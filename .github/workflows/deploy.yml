@@ -154,26 +154,34 @@ jobs:
       - name: 📊 Build Verification
         run: |
           echo "📊 Verifying build artifacts..."
-          if [ ! -d "build" ]; then
-            echo "🔴 Build directory not found!"
-            exit 1
-          fi
-          
           if [ ! -d "dist" ]; then
             echo "🔴 Dist directory not found!"
             exit 1
           fi
           
+          if [ ! -d "dist/build" ]; then
+            echo "🔴 Admin panel build directory not found!"
+            exit 1
+          fi
+          
+          if [ ! -f "dist/build/index.html" ]; then
+            echo "🔴 Admin panel index.html not found!"
+            exit 1
+          fi
+          
           echo "✅ Build verification passed"
+          echo "📊 Build artifacts:"
+          echo "  - dist/ (compiled backend code)"
+          echo "  - dist/build/ (admin panel)"
+          ls -la dist/
 
       - name: 📦 Create Optimized Deployment Package
         run: |
           echo "📦 Creating deployment package..."
           mkdir -p deployment-package
           
-          # Copy essential files and directories
-          cp -r build deployment-package/ 2>/dev/null || echo "⚠️ No build directory found"
-          cp -r dist deployment-package/ 2>/dev/null || echo "⚠️ No dist directory found"
+          # Copy essential files and directories  
+          cp -r dist deployment-package/
           cp -r node_modules deployment-package/
           cp -r src deployment-package/
           cp -r config deployment-package/
