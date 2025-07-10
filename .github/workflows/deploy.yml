@@ -1,0 +1,117 @@
+name: Build and Deploy Strapi to Production
+
+# Trigger the workflow on a push to the main branch
+on:
+  push:
+    branches:
+      - main # Or 'master' depending on your branch name
+
+jobs:
+  # =================================================
+  #      BUILD JOB: Build Strapi on GitHub Runner
+  # =================================================
+  build:
+    runs-on: ubuntu-latest
+    
+    # Set environment variables for the build job
+    env:
+      NODE_ENV: production
+      # We add a dummy URL; it's required for the build but doesn't affect your server's .env
+      URL: https://strapi.dmazing.studio
+
+    steps:
+      # 1. Checkout the repository code
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # 2. Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # Use a version compatible with your Strapi version
+          cache: 'npm'
+
+      # 3. Install npm dependencies
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. Build the Strapi application
+      - name: Build Application
+        run: npm run build
+
+      # 5. Package the build artifacts for deployment
+      - name: Package Artifacts
+        run: |
+          mkdir deployment-package
+          cp -r build deployment-package/
+          cp -r dist deployment-package/
+          cp -r node_modules deployment-package/
+          cp package.json deployment-package/
+          cp package-lock.json deployment-package/
+          tar -czvf deployment-package.tar.gz -C deployment-package .
+
+      # 6. Upload the package as an artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: strapi-build
+          path: deployment-package.tar.gz
+
+  # =================================================
+  #      DEPLOY JOB: Deploy Artifacts to Server
+  # =================================================
+  deploy:
+    # This job depends on the 'build' job completing successfully
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download the build artifact
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: strapi-build
+
+      # 2. Copy the package to the server
+      - name: Copy package to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deployment-package.tar.gz"
+          target: "/home/${{ secrets.USERNAME }}"
+
+      # 3. SSH into server, unpack, and restart
+      - name: Deploy and Restart
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Define the target directory
+            TARGET_DIR="/var/www/dmazing-strapi"
+            
+            # Unpack the new version
+            echo "Unpacking new version..."
+            tar -xzvf /home/${{ secrets.USERNAME }}/deployment-package.tar.gz -C $TARGET_DIR
+            
+            # Clean up the package from home directory
+            echo "Cleaning up..."
+            rm /home/${{ secrets.USERNAME }}/deployment-package.tar.gz
+            
+            # Navigate to the app directory
+            cd $TARGET_DIR
+            
+            # Ensure the .env file exists (it should from your manual setup)
+            if [ ! -f ".env" ]; then
+              echo "🔴 CRITICAL: .env file not found on server! Aborting."
+              exit 1
+            fi
+
+            # Reload the PM2 process for a zero-downtime update
+            echo "Reloading PM2 process..."
+            pm2 reload dmazing-strapi
+            
+            echo "✅ Deployment to strapi.dmazing.studio complete!"
