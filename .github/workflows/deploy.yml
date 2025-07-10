@@ -24,7 +24,6 @@ env:
   DEPLOYMENT_URL: https://strapi.dmazing.studio
   PM2_APP_NAME: dmazing-strapi
   TARGET_DIR: /var/www/dmazing-strapi
-  BACKUP_DIR: /var/backups/dmazing-strapi
 
 # Ensure only one deployment runs at a time
 concurrency:
@@ -254,27 +253,11 @@ jobs:
             
             DEPLOYMENT_ID="${{ needs.pre-deployment.outputs.deployment-id }}"
             TARGET_DIR="/var/www/dmazing-strapi"
-            BACKUP_DIR="/var/backups/dmazing-strapi"
             PM2_APP_NAME="dmazing-strapi"
             
             echo "🚀 Starting deployment: $DEPLOYMENT_ID"
             
-            # Create backup directory if it doesn't exist
-            mkdir -p "$BACKUP_DIR" 2>/dev/null || echo "⚠️ Cannot create backup dir - will backup to home"
-            BACKUP_DIR_FINAL="$BACKUP_DIR"
-            if [ ! -w "$BACKUP_DIR" ]; then
-              BACKUP_DIR_FINAL="/home/${{ secrets.USERNAME }}/backups"
-              mkdir -p "$BACKUP_DIR_FINAL"
-              echo "ℹ️ Using backup directory: $BACKUP_DIR_FINAL"
-            fi
-            
-            # Create backup of current deployment
-            echo "💾 Creating backup of current deployment..."
-            if [ -d "$TARGET_DIR" ]; then
-              BACKUP_NAME="backup-$(date +%Y%m%d-%H%M%S)"
-              cp -r "$TARGET_DIR" "$BACKUP_DIR_FINAL/$BACKUP_NAME" 2>/dev/null || echo "⚠️ Backup failed - continuing deployment"
-              echo "✅ Backup attempted: $BACKUP_DIR_FINAL/$BACKUP_NAME"
-            fi
+            # No backup needed - server has weekly backup schedule
             
             # Prepare new deployment directory
             echo "📁 Preparing deployment directory..."
@@ -336,11 +319,13 @@ jobs:
             # Ensure .env file exists
             if [ ! -f "$TARGET_DIR/.env" ]; then
               echo "🔴 CRITICAL: .env file not found after deployment!"
-              # Attempt rollback
+              echo "💡 Please ensure .env file exists on server before deploying"
+              # Attempt rollback to previous version
               if [ -d "$TARGET_DIR.old" ]; then
-                echo "🔄 Attempting rollback..."
+                echo "🔄 Attempting rollback to previous version..."
                 rm -rf "$TARGET_DIR"
                 mv "$TARGET_DIR.old" "$TARGET_DIR"
+                echo "✅ Rolled back to previous version"
               fi
               exit 1
             fi
@@ -463,50 +448,33 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "🚨 Initiating emergency rollback..."
+            echo "🚨 Deployment failed - stopping application for safety..."
             
-            BACKUP_DIR="/var/backups/dmazing-strapi"
-            BACKUP_DIR_FALLBACK="/home/${{ secrets.USERNAME }}/backups"
             TARGET_DIR="/var/www/dmazing-strapi"
             PM2_APP_NAME="dmazing-strapi"
             
-            # Find the latest backup (try both directories)
-            if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
-              LATEST_BACKUP=$(ls -t "$BACKUP_DIR" | head -n 1)
-              BACKUP_DIR_FINAL="$BACKUP_DIR"
-            elif [ -d "$BACKUP_DIR_FALLBACK" ] && [ "$(ls -A $BACKUP_DIR_FALLBACK 2>/dev/null)" ]; then
-              LATEST_BACKUP=$(ls -t "$BACKUP_DIR_FALLBACK" | head -n 1)
-              BACKUP_DIR_FINAL="$BACKUP_DIR_FALLBACK"
-            else
-              LATEST_BACKUP=""
-            fi
-            
-            if [ -z "$LATEST_BACKUP" ]; then
-              echo "🔴 No backup found for rollback!"
-              exit 1
-            fi
-            
-            echo "🔄 Rolling back to: $LATEST_BACKUP"
-            
-            # Stop current application
+            # Stop the failed application
             pm2 stop "$PM2_APP_NAME" || true
             
-            # Replace with backup
-            rm -rf "$TARGET_DIR.failed" 2>/dev/null || true
-            mv "$TARGET_DIR" "$TARGET_DIR.failed" 2>/dev/null || rm -rf "$TARGET_DIR"
-            cp -r "$BACKUP_DIR_FINAL/$LATEST_BACKUP" "$TARGET_DIR" || {
-              echo "🔴 Rollback failed - cannot copy backup!"
-              exit 1
-            }
-            
-            # Restart application
-            cd "$TARGET_DIR"
-            pm2 start "$PM2_APP_NAME" || pm2 restart "$PM2_APP_NAME"
-            
-            echo "✅ Rollback completed!"
+            # Try to restore from .old if it exists
+            if [ -d "$TARGET_DIR.old" ]; then
+              echo "🔄 Found previous version, attempting quick restore..."
+              mv "$TARGET_DIR" "$TARGET_DIR.failed" 2>/dev/null || rm -rf "$TARGET_DIR"
+              mv "$TARGET_DIR.old" "$TARGET_DIR"
+              
+              # Try to restart with previous version
+              cd "$TARGET_DIR"
+              pm2 start "$PM2_APP_NAME" || pm2 restart "$PM2_APP_NAME"
+              echo "✅ Restored to previous version"
+            else
+              echo "🔴 No previous version available for quick restore"
+              echo "💡 Use your weekly backup to restore manually if needed"
+            fi
 
       - name: 📧 Rollback Notification
         run: |
-          echo "🚨 ROLLBACK EXECUTED"
-          echo "Deployment failed and was automatically rolled back"
-          echo "Please check the logs and fix the issues before attempting to deploy again"
+          echo "🚨 DEPLOYMENT FAILURE RESPONSE EXECUTED"
+          echo "The application has been stopped for safety"
+          echo "If a previous version was available, it has been restored"
+          echo "Check logs and fix issues before attempting to deploy again"
+          echo "💡 Your weekly server backup is available if manual restoration is needed"
