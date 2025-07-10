@@ -88,14 +88,14 @@ jobs:
             echo "🔍 Validating server environment..."
             
             # Check if target directory exists
-            if [ ! -d "${{ env.TARGET_DIR }}" ]; then
-              echo "🔴 Target directory ${{ env.TARGET_DIR }} does not exist!"
+            if [ ! -d "/var/www/dmazing-strapi" ]; then
+              echo "🔴 Target directory /var/www/dmazing-strapi does not exist!"
               exit 1
             fi
             
             # Check if .env file exists
-            if [ ! -f "${{ env.TARGET_DIR }}/.env" ]; then
-              echo "🔴 .env file not found in ${{ env.TARGET_DIR }}!"
+            if [ ! -f "/var/www/dmazing-strapi/.env" ]; then
+              echo "🔴 .env file not found in /var/www/dmazing-strapi!"
               exit 1
             fi
             
@@ -106,7 +106,7 @@ jobs:
             fi
             
             # Check disk space (require at least 2GB free)
-            AVAILABLE=$(df ${{ env.TARGET_DIR }} | awk 'NR==2{print $4}')
+            AVAILABLE=$(df /var/www/dmazing-strapi | awk 'NR==2{print $4}')
             if [ $AVAILABLE -lt 2097152 ]; then
               echo "🔴 Insufficient disk space! Available: ${AVAILABLE}KB"
               exit 1
@@ -123,7 +123,7 @@ jobs:
     
     env:
       NODE_ENV: production
-      URL: ${{ env.DEPLOYMENT_URL }}
+      URL: https://strapi.dmazing.studio
       
     steps:
       - name: 🔍 Checkout Repository
@@ -241,9 +241,9 @@ jobs:
             set -e  # Exit on any error
             
             DEPLOYMENT_ID="${{ needs.pre-deployment.outputs.deployment-id }}"
-            TARGET_DIR="${{ env.TARGET_DIR }}"
-            BACKUP_DIR="${{ env.BACKUP_DIR }}"
-            PM2_APP_NAME="${{ env.PM2_APP_NAME }}"
+            TARGET_DIR="/var/www/dmazing-strapi"
+            BACKUP_DIR="/var/backups/dmazing-strapi"
+            PM2_APP_NAME="dmazing-strapi"
             
             echo "🚀 Starting deployment: $DEPLOYMENT_ID"
             
@@ -364,7 +364,7 @@ jobs:
           
           # Check if the site is accessible
           for i in {1..10}; do
-            if curl -f -s -o /dev/null "${{ env.DEPLOYMENT_URL }}/admin" || curl -f -s -o /dev/null "${{ env.DEPLOYMENT_URL }}"; then
+            if curl -f -s -o /dev/null "https://strapi.dmazing.studio/admin" || curl -f -s -o /dev/null "https://strapi.dmazing.studio"; then
               echo "✅ Application is responding (attempt $i)"
               break
             else
@@ -388,13 +388,13 @@ jobs:
             echo "🔍 Verifying server status..."
             
             # Check PM2 status
-            if ! pm2 show "${{ env.PM2_APP_NAME }}" > /dev/null 2>&1; then
+            if ! pm2 show "dmazing-strapi" > /dev/null 2>&1; then
               echo "🔴 PM2 process not found!"
               exit 1
             fi
             
             # Get PM2 status
-            PM2_STATUS=$(pm2 jlist | jq -r '.[] | select(.name=="${{ env.PM2_APP_NAME }}") | .pm2_env.status')
+            PM2_STATUS=$(pm2 jlist | jq -r '.[] | select(.name=="dmazing-strapi") | .pm2_env.status')
             if [ "$PM2_STATUS" != "online" ]; then
               echo "🔴 Application is not running properly. Status: $PM2_STATUS"
               exit 1
@@ -402,11 +402,11 @@ jobs:
             
             # Check application logs for errors
             echo "📋 Recent application logs:"
-            pm2 logs "${{ env.PM2_APP_NAME }}" --lines 20 --nostream || true
+            pm2 logs "dmazing-strapi" --lines 20 --nostream || true
             
             # Check disk usage
             echo "💾 Disk usage:"
-            df -h "${{ env.TARGET_DIR }}"
+            df -h "/var/www/dmazing-strapi"
             
             # Check memory usage
             echo "🧠 Memory usage:"
@@ -416,9 +416,9 @@ jobs:
 
       - name: 🎉 Deployment Success Notification
         run: |
-          echo "🎉 Deployment to ${{ env.DEPLOYMENT_URL }} completed successfully!"
+          echo "🎉 Deployment to https://strapi.dmazing.studio completed successfully!"
           echo "📅 Deployment ID: ${{ needs.pre-deployment.outputs.deployment-id }}"
-          echo "🔗 Site URL: ${{ env.DEPLOYMENT_URL }}"
+          echo "🔗 Site URL: https://strapi.dmazing.studio"
           echo "📊 Commit: ${{ github.sha }}"
 
   # =================================================
@@ -439,9 +439,9 @@ jobs:
           script: |
             echo "🚨 Initiating emergency rollback..."
             
-            BACKUP_DIR="${{ env.BACKUP_DIR }}"
-            TARGET_DIR="${{ env.TARGET_DIR }}"
-            PM2_APP_NAME="${{ env.PM2_APP_NAME }}"
+            BACKUP_DIR="/var/backups/dmazing-strapi"
+            TARGET_DIR="/var/www/dmazing-strapi"
+            PM2_APP_NAME="dmazing-strapi"
             
             # Find the latest backup
             LATEST_BACKUP=$(ls -t "$BACKUP_DIR" | head -n 1)
