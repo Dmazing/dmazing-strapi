@@ -85,7 +85,7 @@ jobs:
       - name: 🔍 Validate Server Connection
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
@@ -228,7 +228,7 @@ jobs:
       - name: 📤 Transfer Package to Server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "deployment-package.tar.gz"
@@ -237,7 +237,7 @@ jobs:
       - name: 🚀 Deploy with Rollback Support
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 600s
@@ -385,7 +385,7 @@ jobs:
         if: github.event.inputs.force_deploy != 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
@@ -437,7 +437,7 @@ jobs:
       - name: 🔄 Emergency Rollback
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
