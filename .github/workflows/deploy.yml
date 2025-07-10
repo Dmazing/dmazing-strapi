@@ -260,15 +260,20 @@ jobs:
             echo "🚀 Starting deployment: $DEPLOYMENT_ID"
             
             # Create backup directory if it doesn't exist
-            sudo mkdir -p "$BACKUP_DIR"
-            sudo chown ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} "$BACKUP_DIR"
+            mkdir -p "$BACKUP_DIR" 2>/dev/null || echo "⚠️ Cannot create backup dir - will backup to home"
+            BACKUP_DIR_FINAL="$BACKUP_DIR"
+            if [ ! -w "$BACKUP_DIR" ]; then
+              BACKUP_DIR_FINAL="/home/${{ secrets.USERNAME }}/backups"
+              mkdir -p "$BACKUP_DIR_FINAL"
+              echo "ℹ️ Using backup directory: $BACKUP_DIR_FINAL"
+            fi
             
             # Create backup of current deployment
             echo "💾 Creating backup of current deployment..."
             if [ -d "$TARGET_DIR" ]; then
               BACKUP_NAME="backup-$(date +%Y%m%d-%H%M%S)"
-              sudo cp -r "$TARGET_DIR" "$BACKUP_DIR/$BACKUP_NAME"
-              echo "✅ Backup created: $BACKUP_DIR/$BACKUP_NAME"
+              cp -r "$TARGET_DIR" "$BACKUP_DIR_FINAL/$BACKUP_NAME" 2>/dev/null || echo "⚠️ Backup failed - continuing deployment"
+              echo "✅ Backup attempted: $BACKUP_DIR_FINAL/$BACKUP_NAME"
             fi
             
             # Prepare new deployment directory
@@ -306,12 +311,21 @@ jobs:
             
             # Replace application files atomically
             echo "🔄 Deploying new version..."
-            sudo rm -rf "$TARGET_DIR.old" 2>/dev/null || true
+            rm -rf "$TARGET_DIR.old" 2>/dev/null || true
             if [ -d "$TARGET_DIR" ]; then
-              sudo mv "$TARGET_DIR" "$TARGET_DIR.old"
+              mv "$TARGET_DIR" "$TARGET_DIR.old" 2>/dev/null || {
+                echo "⚠️ Cannot move existing directory - trying copy and remove"
+                cp -r "$TARGET_DIR" "$TARGET_DIR.old" || echo "⚠️ Backup copy failed"
+                rm -rf "$TARGET_DIR" || {
+                  echo "🔴 Cannot remove existing directory. Please ensure ${{ secrets.USERNAME }} owns $TARGET_DIR"
+                  exit 1
+                }
+              }
             fi
-            sudo mv "$TEMP_DIR" "$TARGET_DIR"
-            sudo chown -R ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} "$TARGET_DIR"
+            mv "$TEMP_DIR" "$TARGET_DIR" || {
+              echo "🔴 Cannot move new deployment. Please ensure ${{ secrets.USERNAME }} has write access to $(dirname $TARGET_DIR)"
+              exit 1
+            }
             
             # Set proper permissions
             echo "🔐 Setting permissions..."
@@ -325,8 +339,8 @@ jobs:
               # Attempt rollback
               if [ -d "$TARGET_DIR.old" ]; then
                 echo "🔄 Attempting rollback..."
-                sudo rm -rf "$TARGET_DIR"
-                sudo mv "$TARGET_DIR.old" "$TARGET_DIR"
+                rm -rf "$TARGET_DIR"
+                mv "$TARGET_DIR.old" "$TARGET_DIR"
               fi
               exit 1
             fi
@@ -348,7 +362,7 @@ jobs:
             # Clean up
             echo "🧹 Cleaning up..."
             rm -f "/home/${{ secrets.USERNAME }}/deployment-package.tar.gz"
-            sudo rm -rf "$TARGET_DIR.old" 2>/dev/null || true
+            rm -rf "$TARGET_DIR.old" 2>/dev/null || true
             
             # Display deployment info
             echo "📋 Deployment Information:"
@@ -452,11 +466,20 @@ jobs:
             echo "🚨 Initiating emergency rollback..."
             
             BACKUP_DIR="/var/backups/dmazing-strapi"
+            BACKUP_DIR_FALLBACK="/home/${{ secrets.USERNAME }}/backups"
             TARGET_DIR="/var/www/dmazing-strapi"
             PM2_APP_NAME="dmazing-strapi"
             
-            # Find the latest backup
-            LATEST_BACKUP=$(ls -t "$BACKUP_DIR" | head -n 1)
+            # Find the latest backup (try both directories)
+            if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
+              LATEST_BACKUP=$(ls -t "$BACKUP_DIR" | head -n 1)
+              BACKUP_DIR_FINAL="$BACKUP_DIR"
+            elif [ -d "$BACKUP_DIR_FALLBACK" ] && [ "$(ls -A $BACKUP_DIR_FALLBACK 2>/dev/null)" ]; then
+              LATEST_BACKUP=$(ls -t "$BACKUP_DIR_FALLBACK" | head -n 1)
+              BACKUP_DIR_FINAL="$BACKUP_DIR_FALLBACK"
+            else
+              LATEST_BACKUP=""
+            fi
             
             if [ -z "$LATEST_BACKUP" ]; then
               echo "🔴 No backup found for rollback!"
@@ -469,10 +492,12 @@ jobs:
             pm2 stop "$PM2_APP_NAME" || true
             
             # Replace with backup
-            sudo rm -rf "$TARGET_DIR.failed"
-            sudo mv "$TARGET_DIR" "$TARGET_DIR.failed"
-            sudo cp -r "$BACKUP_DIR/$LATEST_BACKUP" "$TARGET_DIR"
-            sudo chown -R ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} "$TARGET_DIR"
+            rm -rf "$TARGET_DIR.failed" 2>/dev/null || true
+            mv "$TARGET_DIR" "$TARGET_DIR.failed" 2>/dev/null || rm -rf "$TARGET_DIR"
+            cp -r "$BACKUP_DIR_FINAL/$LATEST_BACKUP" "$TARGET_DIR" || {
+              echo "🔴 Rollback failed - cannot copy backup!"
+              exit 1
+            }
             
             # Restart application
             cd "$TARGET_DIR"
