@@ -4,13 +4,4 @@ export default ({ env }) => ({
   app: {
     keys: env.array('APP_KEYS'),
   },
-  // Enable development features when NODE_ENV is development
-  ...(env('NODE_ENV') === 'development' && {
-    webhooks: {
-      populateRelations: env.bool('WEBHOOKS_POPULATE_RELATIONS', false),
-    },
-    logger: {
-      level: 'debug',
-    },
-  }),
 });
