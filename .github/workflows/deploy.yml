@@ -1,4 +1,8 @@
-name: 🚀 Build and Deploy Strapi to Production
+name: 🔧 Deploy Strapi in Development Mode
+
+# This workflow deploys Strapi in DEVELOPMENT mode to strapi.dmazing.studio
+# Development mode enables the Content-Type Builder so you can add/modify collections
+# Hot reloading and other development features are enabled
 
 # Trigger the workflow on push to main, manual dispatch, and PR merge
 on:
@@ -20,7 +24,7 @@ on:
 
 # Define environment variables globally
 env:
-  NODE_ENV: production
+  NODE_ENV: development
   DEPLOYMENT_URL: https://strapi.dmazing.studio
   PM2_APP_NAME: dmazing-strapi
   TARGET_DIR: /var/www/dmazing-strapi
@@ -125,7 +129,7 @@ jobs:
     needs: [pre-deployment]
     
     env:
-      NODE_ENV: production
+      NODE_ENV: development
       URL: https://strapi.dmazing.studio
       
     steps:
@@ -140,47 +144,16 @@ jobs:
 
       - name: 📦 Install Dependencies
         run: |
-          echo "📦 Installing production dependencies..."
-          npm ci --only=production
+          echo "📦 Installing all dependencies for development..."
+          npm ci
           echo "✅ Dependencies installed successfully"
 
-      - name: 🏗️ Build Strapi Application
+      - name: 📦 Create Development Deployment Package
         run: |
-          echo "🏗️ Building Strapi application..."
-          npm run build
-          echo "✅ Build completed successfully"
-
-      - name: 📊 Build Verification
-        run: |
-          echo "📊 Verifying build artifacts..."
-          if [ ! -d "dist" ]; then
-            echo "🔴 Dist directory not found!"
-            exit 1
-          fi
-          
-          if [ ! -d "dist/build" ]; then
-            echo "🔴 Admin panel build directory not found!"
-            exit 1
-          fi
-          
-          if [ ! -f "dist/build/index.html" ]; then
-            echo "🔴 Admin panel index.html not found!"
-            exit 1
-          fi
-          
-          echo "✅ Build verification passed"
-          echo "📊 Build artifacts:"
-          echo "  - dist/ (compiled backend code)"
-          echo "  - dist/build/ (admin panel)"
-          ls -la dist/
-
-      - name: 📦 Create Optimized Deployment Package
-        run: |
-          echo "📦 Creating deployment package..."
+          echo "📦 Creating development deployment package..."
           mkdir -p deployment-package
           
-          # Copy essential files and directories  
-          cp -r dist deployment-package/
+          # Copy source files for development (no dist needed)
           cp -r node_modules deployment-package/
           cp -r src deployment-package/
           cp -r config deployment-package/
@@ -198,6 +171,7 @@ jobs:
           echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> deployment-package/.deployment-info
           echo "COMMIT_SHA=${{ github.sha }}" >> deployment-package/.deployment-info
           echo "COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> deployment-package/.deployment-info
+          echo "ENVIRONMENT=development" >> deployment-package/.deployment-info
           
           # Create compressed package
           tar -czvf deployment-package.tar.gz -C deployment-package .
@@ -208,7 +182,7 @@ jobs:
             exit 1
           fi
           
-          echo "✅ Deployment package created successfully"
+          echo "✅ Development deployment package created successfully"
           echo "📦 Package size: $(du -h deployment-package.tar.gz | cut -f1)"
 
       - name: 📤 Upload Build Artifact
@@ -333,13 +307,12 @@ jobs:
             # Navigate to application directory
             cd "$TARGET_DIR"
             
-            # Start/Reload the application
-            echo "▶️ Starting application..."
+            # Start/Reload the application in development mode
+            echo "▶️ Starting application in development mode..."
             if pm2 list | grep -q "$PM2_APP_NAME"; then
-              pm2 reload "$PM2_APP_NAME" --update-env
-            else
-              pm2 start npm --name "$PM2_APP_NAME" -- start
+              pm2 delete "$PM2_APP_NAME" || true
             fi
+            pm2 start npm --name "$PM2_APP_NAME" -- run develop
             
             # Save PM2 configuration
             pm2 save
@@ -425,12 +398,19 @@ jobs:
             
             echo "✅ All health checks passed!"
 
-      - name: 🎉 Deployment Success Notification
+      - name: 🎉 Development Deployment Success
         run: |
-          echo "🎉 Deployment to https://strapi.dmazing.studio completed successfully!"
+          echo "🎉 Development deployment to https://strapi.dmazing.studio completed successfully!"
           echo "📅 Deployment ID: ${{ needs.pre-deployment.outputs.deployment-id }}"
           echo "🔗 Site URL: https://strapi.dmazing.studio"
           echo "📊 Commit: ${{ github.sha }}"
+          echo ""
+          echo "🔧 Development Features Enabled:"
+          echo "  ✅ Content-Type Builder (add/modify collections)"
+          echo "  ✅ Hot reloading"
+          echo "  ✅ Development admin panel"
+          echo ""
+          echo "💡 You can now add collections through the admin panel!"
 
   # =================================================
   #        ROLLBACK JOB: Emergency Rollback
