@@ -373,41 +373,12 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiProjectTagsProjectTags extends Struct.CollectionTypeSchema {
-  collectionName: 'project_tags_plural';
+export interface ApiTempPostTempPost extends Struct.CollectionTypeSchema {
+  collectionName: 'temp_posts';
   info: {
-    displayName: 'Project tags';
-    pluralName: 'project-tags-plural';
-    singularName: 'project-tags';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::project-tags.project-tags'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    projects: Schema.Attribute.Relation<'manyToMany', 'api::projects.projects'>;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
-  collectionName: 'projects_plural';
-  info: {
-    displayName: 'Projects';
-    pluralName: 'projects-plural';
-    singularName: 'projects';
+    displayName: 'Temp Post';
+    pluralName: 'temp-posts';
+    singularName: 'temp-post';
   };
   options: {
     draftAndPublish: true;
@@ -417,24 +388,14 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
-    gallery: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::projects.projects'
+      'api::temp-post.temp-post'
     > &
       Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    project_tags: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::project-tags.project-tags'
-    >;
     publishedAt: Schema.Attribute.DateTime;
-    summary: Schema.Attribute.Text;
-    thumbnail: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -950,8 +911,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::project-tags.project-tags': ApiProjectTagsProjectTags;
-      'api::projects.projects': ApiProjectsProjects;
+      'api::temp-post.temp-post': ApiTempPostTempPost;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
