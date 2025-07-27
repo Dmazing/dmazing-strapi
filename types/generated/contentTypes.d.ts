@@ -373,6 +373,39 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiCommentsComments extends Struct.CollectionTypeSchema {
+  collectionName: 'comments_plural';
+  info: {
+    displayName: 'comments';
+    pluralName: 'comments-plural';
+    singularName: 'comments';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    author_name: Schema.Attribute.String;
+    author_pic: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios'
+    >;
+    author_role: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::comments.comments'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    text: Schema.Attribute.Text;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiProjectTagsProjectTags extends Struct.CollectionTypeSchema {
   collectionName: 'project_tags_plural';
   info: {
@@ -951,6 +984,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::comments.comments': ApiCommentsComments;
       'api::project-tags.project-tags': ApiProjectTagsProjectTags;
       'api::projects.projects': ApiProjectsProjects;
       'plugin::content-releases.release': PluginContentReleasesRelease;
