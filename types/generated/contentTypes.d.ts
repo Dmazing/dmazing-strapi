@@ -450,10 +450,12 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
+    extra_text: Schema.Attribute.String;
     gallery: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios',
       true
     >;
+    is_featured: Schema.Attribute.Boolean;
     lnk: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -461,6 +463,7 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
       'api::projects.projects'
     > &
       Schema.Attribute.Private;
+    logo: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     name: Schema.Attribute.String;
     project_tags: Schema.Attribute.Relation<
       'manyToMany',

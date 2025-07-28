@@ -48,6 +48,22 @@
     },
     "lnk": {
       "type": "string"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "extra_text": {
+      "type": "string"
+    },
+    "is_featured": {
+      "type": "boolean"
     }
   }
 }
