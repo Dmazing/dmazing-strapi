@@ -398,8 +398,45 @@ export interface ApiCommentsComments extends Struct.CollectionTypeSchema {
       'api::comments.comments'
     > &
       Schema.Attribute.Private;
+    project_categories: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::project-category.project-category'
+    >;
     publishedAt: Schema.Attribute.DateTime;
     text: Schema.Attribute.Text;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProjectCategoryProjectCategory
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'project_categories';
+  info: {
+    displayName: 'Project_category';
+    pluralName: 'project-categories';
+    singularName: 'project-category';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    comments: Schema.Attribute.Relation<'manyToMany', 'api::comments.comments'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    desc: Schema.Attribute.String;
+    icon: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::project-category.project-category'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    projects: Schema.Attribute.Relation<'manyToMany', 'api::projects.projects'>;
+    publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -465,6 +502,10 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     logo: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     name: Schema.Attribute.String;
+    project_categories: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::project-category.project-category'
+    >;
     project_tags: Schema.Attribute.Relation<
       'manyToMany',
       'api::project-tags.project-tags'
@@ -988,6 +1029,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::comments.comments': ApiCommentsComments;
+      'api::project-category.project-category': ApiProjectCategoryProjectCategory;
       'api::project-tags.project-tags': ApiProjectTagsProjectTags;
       'api::projects.projects': ApiProjectsProjects;
       'plugin::content-releases.release': PluginContentReleasesRelease;
