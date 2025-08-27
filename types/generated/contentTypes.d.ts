@@ -398,10 +398,6 @@ export interface ApiCommentsComments extends Struct.CollectionTypeSchema {
       'api::comments.comments'
     > &
       Schema.Attribute.Private;
-    project_categories: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::project-category.project-category'
-    >;
     publishedAt: Schema.Attribute.DateTime;
     text: Schema.Attribute.Text;
     updatedAt: Schema.Attribute.DateTime;
@@ -422,7 +418,6 @@ export interface ApiProjectCategoryProjectCategory
     draftAndPublish: true;
   };
   attributes: {
-    comments: Schema.Attribute.Relation<'manyToMany', 'api::comments.comments'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -493,7 +488,7 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
       true
     >;
     is_featured: Schema.Attribute.Boolean;
-    lnk: Schema.Attribute.String;
+    Link: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',

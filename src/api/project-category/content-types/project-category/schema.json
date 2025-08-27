@@ -14,12 +14,6 @@
     "name": {
       "type": "string"
     },
-    "comments": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::comments.comments",
-      "inversedBy": "project_categories"
-    },
     "icon": {
       "type": "json"
     },

@@ -46,7 +46,7 @@
       "target": "api::project-tags.project-tags",
       "inversedBy": "projects"
     },
-    "lnk": {
+    "Link": {
       "type": "string"
     },
     "logo": {

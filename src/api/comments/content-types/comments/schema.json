@@ -29,12 +29,6 @@
         "videos",
         "audios"
       ]
-    },
-    "project_categories": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::project-category.project-category",
-      "mappedBy": "comments"
     }
   }
 }
