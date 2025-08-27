@@ -488,7 +488,7 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
       true
     >;
     is_featured: Schema.Attribute.Boolean;
-    Link: Schema.Attribute.String;
+    link: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
