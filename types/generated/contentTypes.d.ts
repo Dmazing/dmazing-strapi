@@ -406,6 +406,46 @@ export interface ApiCommentsComments extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiMembersMembers extends Struct.CollectionTypeSchema {
+  collectionName: 'members_plural';
+  info: {
+    displayName: 'Members';
+    pluralName: 'members-plural';
+    singularName: 'members';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::members.members'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    picture: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    publishedAt: Schema.Attribute.DateTime;
+    role: Schema.Attribute.String;
+    sort_number: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 100;
+          min: 0;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<100>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiProjectCategoryProjectCategory
   extends Struct.CollectionTypeSchema {
   collectionName: 'project_categories';
@@ -507,6 +547,7 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
     >;
     publishedAt: Schema.Attribute.DateTime;
     short_summary: Schema.Attribute.Text;
+    text_under_gallery: Schema.Attribute.Text;
     thumbnail: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1024,6 +1065,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::comments.comments': ApiCommentsComments;
+      'api::members.members': ApiMembersMembers;
       'api::project-category.project-category': ApiProjectCategoryProjectCategory;
       'api::project-tags.project-tags': ApiProjectTagsProjectTags;
       'api::projects.projects': ApiProjectsProjects;
