@@ -29,6 +29,11 @@
         "videos",
         "audios"
       ]
+    },
+    "sort_number": {
+      "type": "integer",
+      "required": true,
+      "default": 100
     }
   }
 }
