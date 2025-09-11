@@ -73,6 +73,9 @@
     },
     "text_under_gallery": {
       "type": "text"
+    },
+    "slug": {
+      "type": "string"
     }
   }
 }

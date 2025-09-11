@@ -550,6 +550,7 @@ export interface ApiProjectsProjects extends Struct.CollectionTypeSchema {
     >;
     publishedAt: Schema.Attribute.DateTime;
     short_summary: Schema.Attribute.Text;
+    slug: Schema.Attribute.String;
     text_under_gallery: Schema.Attribute.Text;
     thumbnail: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     updatedAt: Schema.Attribute.DateTime;
