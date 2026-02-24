@@ -76,6 +76,12 @@
     },
     "slug": {
       "type": "string"
+    },
+    "sort_number": {
+      "type": "integer",
+      "required": true,
+      "default": 1000,
+      "min": 0
     }
   }
 }
